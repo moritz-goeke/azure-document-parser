@@ -1,12 +1,12 @@
 # Azure Document Parser
 
-A modern web application that leverages Azure Document Intelligence and OpenAI to parse and analyze documents. The application extracts text content from uploaded documents and processes it using AI to provide structured outputs based on customizable JSON formats.
+A modern web application that leverages Azure Document Intelligence and Azure OpenAI to parse and analyze documents. The application extracts text content from uploaded documents and processes it using AI to provide structured outputs based on customizable JSON formats.
 
 ## Features
 
 - **Document Upload & Processing**: Support for PDF and other document formats
 - **Azure Document Intelligence Integration**: Powerful OCR and document analysis capabilities
-- **OpenAI Integration**: AI-powered content analysis and structured data extraction
+- **Azure OpenAI Integration**: AI-powered content analysis and structured data extraction
 - **Customizable Output Format**: Define your own JSON schema for structured results
 - **Real-time Processing**: Asynchronous job processing with status updates
 - **Modern React UI**: Clean, responsive interface built with Material-UI
@@ -25,7 +25,7 @@ A modern web application that leverages Azure Document Intelligence and OpenAI t
 
 - **Azure Functions** (Node.js) for serverless API endpoints
 - **Azure Document Intelligence** for document analysis and OCR
-- **OpenAI API** for AI-powered content processing
+- **Azure OpenAI API** for AI-powered content processing
 - **Azure Storage** (Blob & Queue) for job management and data persistence
 - **Azure Cosmos DB** for document storage (optional)
 
@@ -33,8 +33,8 @@ A modern web application that leverages Azure Document Intelligence and OpenAI t
 
 - `POST /api/startDocumentAnalysis` - Initialize document analysis
 - `GET /api/checkDocumentStatus` - Check analysis status
-- `POST /api/openai/jobs` - Submit OpenAI processing job
-- `GET /api/openai/jobs/{jobId}` - Check OpenAI job status
+- `POST /api/openai/jobs` - Submit Azure OpenAI processing job
+- `GET /api/openai/jobs/{jobId}` - Check Azure OpenAI job status
 
 ## Getting Started
 
@@ -149,9 +149,9 @@ The project includes pre-configured VS Code tasks:
 2. Copy the endpoint and key to your environment variables
 3. The application uses the `prebuilt-read` model by default
 
-### OpenAI Setup
+### Azure OpenAI Setup
 
-This application requires Azure OpenAI Service. Follow these steps:
+This application requires an Azure OpenAI Service. Follow these steps:
 
 1. **Create an Azure OpenAI resource**
 
