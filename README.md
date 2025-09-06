@@ -40,13 +40,13 @@ A modern web application that leverages Azure Document Intelligence and OpenAI t
 
 ### Prerequisites
 
-- **Node.js** (v20 or later)
+- **Node.js** (v20 or later) - Required for React 19
 - **Azure CLI** (for deployment)
 - **Azure Functions Core Tools** (v4)
 - **Azure Subscription** with the following services:
   - Azure Document Intelligence
   - Azure Storage Account
-  - Azure OpenAI Service (or OpenAI API key)
+  - Azure OpenAI Service with a deployed model
 
 ### Environment Variables
 
@@ -60,8 +60,10 @@ Create a `local.settings.json` file in the `backend` directory:
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "DOCUMENT_INTELLIGENCE_KEY": "your_document_intelligence_key",
     "DOCUMENT_INTELLIGENCE_ENDPOINT": "your_document_intelligence_endpoint",
-    "OPENAI_API_KEY": "your_openai_api_key",
-    "OPENAI_ENDPOINT": "your_openai_endpoint"
+    "AZURE_OPENAI_ENDPOINT": "your_azure_openai_endpoint",
+    "AZURE_OPENAI_KEY": "your_azure_openai_key",
+    "AZURE_OPENAI_DEPLOYMENT_NAME": "your_model_deployment_name",
+    "AZURE_OPENAI_API_VERSION": "2025-01-01-preview"
   }
 }
 ```
@@ -149,10 +151,29 @@ The project includes pre-configured VS Code tasks:
 
 ### OpenAI Setup
 
-You can use either:
+This application requires Azure OpenAI Service. Follow these steps:
 
-- **Azure OpenAI Service**: Set `OPENAI_ENDPOINT` to your Azure OpenAI endpoint
-- **OpenAI API**: Set `OPENAI_API_KEY` to your OpenAI API key
+1. **Create an Azure OpenAI resource**
+
+   - Go to Azure Portal → Create Resource → Azure OpenAI
+   - Choose your subscription, resource group, and region
+   - Select the pricing tier
+
+2. **Deploy a model**
+
+   - In your Azure OpenAI resource, go to "Model deployments"
+   - Click "Create new deployment"
+   - Select a model (recommended: `gpt-4o` or `gpt-4`)
+   - Give your deployment a name (e.g., `gpt-4o-cvparser`)
+   - Note this deployment name for your environment variables
+
+3. **Configure environment variables**
+   - `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint URL
+   - `AZURE_OPENAI_KEY`: Your Azure OpenAI API key (found in "Keys and Endpoint")
+   - `AZURE_OPENAI_DEPLOYMENT_NAME`: The name you gave to your model deployment
+   - `AZURE_OPENAI_API_VERSION`: API version (default: `2025-01-01-preview`)
+
+**Note**: All Azure OpenAI environment variables must be set for the application to work properly.
 
 ### Storage Configuration
 
@@ -188,7 +209,7 @@ The application requires an Azure Storage Account for:
 
 ## Deployment
 
-### Deploy to Azure Static Web Apps
+### Deploy using Azure Static Web Apps & Azure Functions
 
 Azure Static Web Apps provides the best integration for this application as it can host both the frontend and connect to Azure Functions seamlessly.
 
@@ -210,17 +231,18 @@ Azure Static Web Apps provides the best integration for this application as it c
 
 1. **Create a Function App**
 
-   ```bash
-   # Create a new Function App in Azure
-   az functionapp create \
-     --resource-group <your-resource-group> \
-     --name <your-function-app-name> \
-     --storage-account <your-storage-account> \
-     --consumption-plan-location <your-region> \
-     --runtime node \
-     --runtime-version 20 \
-     --functions-version 4
-   ```
+   ##### Create a Function App with Flex Consumption Plan
+
+   1. Go to the [Azure Portal](https://portal.azure.com).
+   2. Search for **"Function App"** and click **Create**.
+   3. Choose your **Subscription** and **Resource Group**.
+   4. Enter a **Name** for your Function App.
+   5. Select the **Region**.
+   6. For **Hosting**, select **Flex Consumption** (this will automatically create the Flex plan for you).
+   7. Choose **Node.js** as the runtime stack and select **Version 20**.
+   8. Select or create a **Storage Account**.
+   9. Complete any additional configuration as needed.
+   10. Click **Review + create**, then **Create**.
 
 2. **Deploy your Azure Functions**
 
@@ -243,8 +265,10 @@ Azure Static Web Apps provides the best integration for this application as it c
    ```
    DOCUMENT_INTELLIGENCE_KEY=your_key
    DOCUMENT_INTELLIGENCE_ENDPOINT=your_endpoint
-   OPENAI_API_KEY=your_openai_key
-   OPENAI_ENDPOINT=your_azure_openai_endpoint
+   AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint
+   AZURE_OPENAI_KEY=your_azure_openai_key
+   AZURE_OPENAI_DEPLOYMENT_NAME=your_model_deployment_name
+   AZURE_OPENAI_API_VERSION=2025-01-01-preview
    AzureWebJobsStorage=your_storage_connection_string
    ```
 
@@ -256,7 +280,10 @@ Ensure the following environment variables are set in your Azure Function App:
 
 - `DOCUMENT_INTELLIGENCE_KEY`
 - `DOCUMENT_INTELLIGENCE_ENDPOINT`
-- `OPENAI_API_KEY` or `OPENAI_ENDPOINT`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_KEY`
+- `AZURE_OPENAI_DEPLOYMENT_NAME`
+- `AZURE_OPENAI_API_VERSION` (optional, defaults to `2025-01-01-preview`)
 - `AzureWebJobsStorage`
 
 ## Development
@@ -309,12 +336,3 @@ azure-document-parser/
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [React Documentation](https://react.dev)
 - [Material-UI Documentation](https://mui.com)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Functions not starting**: Ensure Azure Functions Core Tools are installed and `local.settings.json` is configured
-2. **CORS errors**: The backend is configured to allow all origins in development
-3. **Document analysis fails**: Check your Document Intelligence key and endpoint
-4. **OpenAI requests fail**: Verify your API key and endpoint configuration
