@@ -169,8 +169,13 @@ Document Text → Submit Job → Queue Processing → Poll Status → Results
 
 - **Latency**: 10-60 seconds depending on content complexity
 - **Throughput**: Depends on OpenAI service limits and quotas
+- **Token requirements**:
+  - Small documents: 2,000-5,000 tokens
+  - Medium documents: 10,000-20,000 tokens
+  - Large documents: 30,000+ tokens
+- **Quota recommendations**: Minimum 50,000 TPM for production workloads
 - **Queue capacity**: Virtually unlimited with Azure Storage Queues
-- **Concurrent processing**: Configurable based on Azure Functions scaling
+- **Concurrent processing**: Configurable based on Azure Functions scaling, can be limited by Azure OpenAI quota and rate limits
 
 ### Error Handling & Monitoring
 
@@ -328,10 +333,21 @@ This application requires an Azure OpenAI Service. Follow these steps:
    - Note this deployment name for your environment variables
 
 3. **Configure environment variables**
+
    - `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint URL
    - `AZURE_OPENAI_KEY`: Your Azure OpenAI API key (found in "Keys and Endpoint")
    - `AZURE_OPENAI_DEPLOYMENT_NAME`: The name you gave to your model deployment
    - `AZURE_OPENAI_API_VERSION`: API version (default: `2025-01-01-preview`)
+
+4. **Configure quota and capacity**
+   - **Token limits**: Ensure sufficient quota for document processing
+   - **Document size impact**: Larger documents require higher token limits
+     - Small documents (1-2 pages): ~2,000-5,000 tokens
+     - Medium documents (5-10 pages): ~10,000-20,000 tokens
+     - Large documents (20+ pages): ~30,000+ tokens
+   - **Recommended quota**: Set at least 50,000 tokens per minute (TPM) for production use
+   - **Rate limits**: Consider concurrent document processing when setting quotas
+   - **Monitor usage**: Track token consumption in Azure portal to adjust quotas as needed
 
 **Note**: All Azure OpenAI environment variables must be set for the application to work properly.
 
