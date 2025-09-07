@@ -14,20 +14,180 @@ A modern web application that leverages Azure Document Intelligence and Azure Op
 
 ## Architecture
 
-### Frontend
+This application implements a modern, scalable architecture using Azure services to handle document processing and AI analysis. The system is designed to handle both quick document analysis and potentially long-running AI processing tasks.
+
+### System Overview
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│                 │    │                  │    │                 │
+│  React Frontend │────│  Azure Functions │────│  Azure Services │
+│  (Static Web)   │    │   (Backend API)  │    │   (Processing)  │
+│                 │    │                  │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### Detailed Architecture Components
+
+#### Frontend Layer
 
 - **React** with Vite for fast development and building
 - **Material-UI (MUI)** for modern, accessible UI components
 - **React Router** for navigation
 - **Axios** for API communication
 
-### Backend
+#### Backend Layer - Azure Functions
 
-- **Azure Functions** (Node.js) for serverless API endpoints
-- **Azure Document Intelligence** for document analysis and OCR
-- **Azure OpenAI API** for AI-powered content processing
-- **Azure Storage** (Blob & Queue) for job management and data persistence
-- **Azure Cosmos DB** for document storage (optional)
+- **Azure Functions** (Node.js) providing serverless API endpoints
+- **Event-driven architecture** with queue-based processing
+- **Asynchronous job processing** for long-running AI tasks
+
+#### Processing Services
+
+##### 1. Azure Document Intelligence
+
+- **Purpose**: OCR and document structure analysis
+- **Model**: Uses `prebuilt-read` for text extraction
+- **Processing**: Synchronous analysis with polling for completion
+- **Input**: Base64-encoded documents (PDF, images)
+- **Output**: Structured text content with layout information
+
+##### 2. Azure OpenAI Service
+
+- **Purpose**: AI-powered content analysis and structured data extraction
+- **Models**: GPT-4o or GPT-4 (configurable via deployment)
+- **Processing**: Asynchronous with queue-based job system
+- **Features**: JSON-structured output, customizable prompts
+
+##### 3. Azure Storage Account
+
+- **Blob Storage**:
+  - Stores job input data (PDF context, formatting requirements)
+  - Stores job status and results
+  - Container: `openai-jobs`
+- **Queue Storage**:
+  - Manages asynchronous OpenAI processing jobs
+  - Queue: `openai-jobs`
+  - Enables horizontal scaling and fault tolerance
+
+#### Data Flow & Processing Patterns
+
+### 1. Document Analysis Flow (Fast Path)
+
+```
+User Upload → Document Intelligence → Text Extraction → Frontend Display
+    ↓              ↓                      ↓
+  PDF File    → Base64 Encode       → Structured Text
+    ↓              ↓                      ↓
+Submit API    → /api/startDocumentAnalysis → Poll Status
+    ↓              ↓                      ↓
+Job ID        → /api/checkDocumentStatus  → Complete
+```
+
+**Steps:**
+
+1. User uploads PDF via frontend
+2. `startDocumentAnalysis` function receives base64-encoded file
+3. Azure Document Intelligence processes document (2-10 seconds)
+4. Frontend polls `checkDocumentStatus` until completion
+5. Raw text content returned to frontend
+
+### 2. AI Processing Flow (Async Pattern - Sub + Poll)
+
+```
+Document Text → Submit Job → Queue Processing → Poll Status → Results
+     ↓             ↓             ↓              ↓           ↓
+  Structured   → Job Created → Worker Function → Status    → JSON
+    Input         in Blob       Processes        Updates     Output
+                    ↓             ↓              ↓           ↓
+                 Queued     → OpenAI API    → Blob Storage → Frontend
+```
+
+**Detailed Sub + Poll Pattern:**
+
+#### Subscription Phase (Submit):
+
+1. **Job Submission** (`/api/openai/jobs` - POST)
+   - Creates unique job ID (UUID)
+   - Stores input data in blob: `{jobId}.input.json`
+   - Stores initial status in blob: `{jobId}.status.json`
+   - Enqueues job message in Azure Storage Queue
+   - Returns job ID and status URL to frontend
+
+#### Processing Phase (Background):
+
+2. **Queue Worker** (`openai-jobs-worker` - Storage Queue Trigger)
+   - Triggered automatically when job added to queue
+   - Retrieves job input from blob storage
+   - Updates status to "running"
+   - Calls Azure OpenAI API with:
+     - System prompt for resume parsing
+     - User-defined JSON format
+     - Additional context instructions
+     - PDF text content
+   - Processes response (JSON parsing, error handling)
+   - Updates final status and result in blob storage
+
+#### Polling Phase (Status Monitoring):
+
+3. **Status Polling** (`/api/openai/jobs/{jobId}` - GET)
+   - Frontend polls this endpoint every 2 seconds
+   - Returns current job status from blob storage
+   - Possible statuses: `queued`, `running`, `succeeded`, `failed`
+   - When `succeeded`, returns parsed JSON result
+   - Includes error details if `failed`
+
+### Benefits of Sub + Poll Pattern
+
+#### Scalability
+
+- **Horizontal scaling**: Multiple queue workers can process jobs in parallel
+- **Load distribution**: Queue automatically balances work across available instances
+- **No timeout limits**: Long-running AI processing doesn't block HTTP requests
+
+#### Reliability
+
+- **Fault tolerance**: Failed jobs can be retried automatically
+- **Persistence**: Job state persists in blob storage
+- **Monitoring**: Full audit trail of job processing
+
+#### User Experience
+
+- **Non-blocking**: Users can continue using the application
+- **Real-time updates**: Status polling provides immediate feedback
+- **Progress tracking**: Clear indication of processing stages
+
+### Performance Characteristics
+
+#### Document Intelligence
+
+- **Latency**: 2-10 seconds for typical documents
+- **Throughput**: High (direct API calls)
+- **Limitations**: 50MB file size limit
+
+#### OpenAI Processing
+
+- **Latency**: 10-60 seconds depending on content complexity
+- **Throughput**: Depends on OpenAI service limits and quotas
+- **Queue capacity**: Virtually unlimited with Azure Storage Queues
+- **Concurrent processing**: Configurable based on Azure Functions scaling
+
+### Error Handling & Monitoring
+
+#### Automatic Retries
+
+- Queue messages automatically retry on failure (configurable)
+- Dead letter queues for permanently failed jobs
+- Exponential backoff for transient failures
+
+#### Logging & Observability
+
+- Azure Functions built-in logging
+- Application Insights integration (optional)
+- Blob storage provides full audit trail
+- Job status tracking with timestamps
+
+This architecture ensures the application can handle both quick document processing and potentially long-running AI analysis tasks while maintaining responsiveness and reliability.
 
 ### API Endpoints
 
@@ -40,7 +200,7 @@ A modern web application that leverages Azure Document Intelligence and Azure Op
 
 ### Prerequisites
 
-- **Node.js** (v20 or later) - Required for React 19
+- **Node.js** (v20 or later)
 - **Azure CLI** (for deployment)
 - **Azure Functions Core Tools** (v4)
 - **Azure Subscription** with the following services:
