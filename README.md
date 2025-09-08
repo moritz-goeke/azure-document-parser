@@ -18,14 +18,7 @@ This application implements a modern, scalable architecture using Azure services
 
 ### System Overview
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│                 │    │                  │    │                 │
-│  React Frontend │────│  Azure Functions │────│  Azure Services │
-│  (Static Web)   │    │   (Backend API)  │    │   (Processing)  │
-│                 │    │                  │    │                 │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
+<img width="756" height="398" alt="document_parser_app" src="https://github.com/user-attachments/assets/927e1607-2d74-434d-a9ad-f614397e5327" />
 
 ### Detailed Architecture Components
 
